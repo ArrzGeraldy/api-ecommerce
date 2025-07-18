@@ -36,3 +36,9 @@ export const deleteTestCategory = async (id) => {
     where: { id },
   });
 };
+
+export const getTestCategoryById = async (id) => {
+  return await prismaClient.category.findUnique({
+    where: { id },
+  });
+};

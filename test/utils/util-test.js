@@ -87,18 +87,6 @@ const cleanupTestEnv = async (state) => {
   await deleteTestUser("admin@gmail.com");
 };
 
-export const setupTestProduct = async (state, supertest, app) => {
-  await createAdminUser();
-  const res = await supertest(app).post("/api/v1/auth/login").send({
-    email: "admin@gmail.com",
-    password: "admin123",
-  });
-
-  state.token = res.body.data.access_token;
-  state.parentId = await createTestParentCategory();
-  state.childrenId = await createTestChildrenCategory(state.parentId);
-};
-
 export const setupTestCartItem = async (state, supertest, app) => {
   // create user
   state.userId = await createTestUser(

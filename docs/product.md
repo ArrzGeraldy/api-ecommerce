@@ -9,8 +9,9 @@
 | limit | Number | ❌ | 10 | Number of users per page |
 | page | Number | ❌ | 1 | Page number to retrieve |
 | parent | String | ❌ | - | Get product by parent category (`VALUES=:slug`) |
-| child | String | ❌ | - | Get product by child category (`VALUES=:slug`) |
+| child | Number | ❌ | - | Get product by child category id |
 | search | String | ❌ | - | Get product by name |
+| sort | String | ❌ | - | Supported values: `best_seller` `lowest_price` `highest_price` |
 
 ---
 

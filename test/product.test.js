@@ -1,27 +1,20 @@
 import supertest from "supertest";
 import {
-  createTestProduct,
   deleteTestProduct,
   getTestProduct,
   getVariantJsonTest,
 } from "./utils/product.js";
-import { createTestUser, deleteTestUser } from "./utils/user";
 import { app } from "../src/app/app.js";
-import { deleteTestCategory } from "./utils/category.js";
+import { getTestCategoryById } from "./utils/category.js";
 import {
   deleteFromCloudinary,
   getPublicIdCloudinary,
 } from "../src/utils/clodinary-util.js";
-import {
-  countVariantByProductIdTest,
-  createTestProductVariant,
-  deleteTestVariant,
-} from "./utils/variant.js";
+import { countVariantByProductIdTest } from "./utils/variant.js";
 import {
   cleanupProductTest,
   getFileTest,
   setupProductTest,
-  setupTestProduct,
 } from "./utils/util-test.js";
 import {
   createTestOrder,
@@ -37,6 +30,66 @@ import {
 
 const { imagePath, largeImage, pdfFile } = getFileTest();
 const variantsJson = getVariantJsonTest();
+
+describe("GET /api/v1/products", () => {
+  /** @type {import("./utils/util-test.js").TestEnvState} */
+  let state;
+
+  beforeAll(async () => {
+    state = await setupProductTest(supertest, app);
+  });
+
+  afterAll(async () => {
+    await cleanupProductTest(state);
+  });
+
+  it("should return all products without filter", async () => {
+    const res = await supertest(app)
+      .get("/api/v1/products")
+      .query({ page: 1, limit: 10 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.total_data).toBeGreaterThan(0);
+    expect(res.body.total_page).toBeGreaterThan(0);
+  });
+
+  it("should return filtered products by search", async () => {
+    const res = await supertest(app)
+      .get("/api/v1/products")
+      .query({ page: 1, limit: 10, search: "test" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it("should return filtered products by category id", async () => {
+    const res = await supertest(app)
+      .get("/api/v1/products")
+      .query({ page: 1, limit: 10, category: state.childrenId });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.every((p) => p.category.id === state.childrenId)).toBe(
+      true
+    );
+  });
+
+  it("should return filtered products by parent category slug", async () => {
+    const category = await getTestCategoryById(state.parentId);
+    const res = await supertest(app)
+      .get("/api/v1/products")
+      .query({ page: 1, limit: 10, parent: category.slug });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(
+      res.body.data.every((p) => p.category.parent?.slug === category.slug)
+    ).toBe(true);
+  });
+});
 
 describe("GET /api/v1/products/:id", () => {
   /** @type {import("./utils/util-test.js").TestEnvState} */
@@ -78,22 +131,21 @@ describe("GET /api/v1/products/:id", () => {
 });
 
 describe("POST /api/v1/products", () => {
-  const state = {};
+  /** @type {import("./utils/util-test.js").TestEnvState} */
+  let state;
 
   beforeAll(async () => {
-    await setupTestProduct(state, supertest, app);
+    state = await setupProductTest(supertest, app);
   });
 
   afterAll(async () => {
-    await deleteTestUser("admin@gmail.com");
-    await deleteTestCategory(state.childrenId);
-    await deleteTestCategory(state.parentId);
+    await cleanupProductTest(state);
   });
 
   it("should create a product successfully", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -116,7 +168,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if required fields are missing", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -131,7 +183,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if variants is not json string", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -146,7 +198,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if variants not json array string", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -161,7 +213,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if price not a number", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", "price")
       .field("category_id", state.childrenId)
@@ -176,7 +228,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if category_id not a number", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", "category id")
@@ -191,7 +243,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if category not found", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", 99999)
@@ -206,7 +258,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if category is parent", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.parentId)
@@ -222,7 +274,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if key file not 'image'", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -238,7 +290,7 @@ describe("POST /api/v1/products", () => {
   it("should reject if file not (jpg, jpeg, png, webp)", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -254,7 +306,7 @@ describe("POST /api/v1/products", () => {
   it("should reject oversized image (>2MB)", async () => {
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -267,17 +319,9 @@ describe("POST /api/v1/products", () => {
   });
 
   it("should reject if not admin", async () => {
-    await createTestUser();
-    const resLogin = await supertest(app).post("/api/v1/auth/login").send({
-      email: "test@example.com",
-      password: "test1234",
-    });
-
-    const userToken = resLogin.body.data.access_token;
-
     const res = await supertest(app)
       .post("/api/v1/products")
-      .set("Authorization", `Bearer ${userToken}`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
       .field("name", "Test Product Forbidden")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -286,8 +330,6 @@ describe("POST /api/v1/products", () => {
 
     expect(res.status).toBe(403);
     expect(res.body.errors).toBeDefined();
-
-    await deleteTestUser("test@example.com");
   });
 
   it("should reject if not send token", async () => {
@@ -305,28 +347,21 @@ describe("POST /api/v1/products", () => {
 });
 
 describe("PATCH /api/v1/products/:id", () => {
-  const state = {};
-  let productId;
-  let variantId;
+  /** @type {import("./utils/util-test.js").TestEnvState} */
+  let state;
 
   beforeAll(async () => {
-    await setupTestProduct(state, supertest, app);
-    productId = await createTestProduct(state.childrenId);
-    variantId = await createTestProductVariant(productId);
+    state = await setupProductTest(supertest, app);
   });
 
   afterAll(async () => {
-    await deleteTestUser("admin@gmail.com");
-    await deleteTestVariant(variantId);
-    await deleteTestProduct(productId);
-    await deleteTestCategory(state.childrenId);
-    await deleteTestCategory(state.parentId);
+    await cleanupProductTest(state);
   });
 
   it("should successfully update product without variants & image", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789);
 
@@ -338,8 +373,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should successfully update product with image", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .attach("image", imagePath);
@@ -357,7 +392,7 @@ describe("PATCH /api/v1/products/:id", () => {
   it("should successfully update product with image and variants", async () => {
     const variantPayload = [
       {
-        id: variantId,
+        id: state.variantId,
         name: "variant update",
         stock: 5,
         price_diff: 20000,
@@ -365,8 +400,8 @@ describe("PATCH /api/v1/products/:id", () => {
     ];
 
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .field("variants", JSON.stringify(variantPayload))
@@ -385,8 +420,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should reject if key file not 'image'", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .attach("picture", imagePath);
@@ -397,8 +432,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should reject if file not image (jpg,jpeg,png,webp)", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .attach("image", pdfFile);
@@ -409,8 +444,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should reject if image size > 2mb", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .attach("image", largeImage);
@@ -421,8 +456,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should reject if variant invalid json array", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .field("variants", "variantPayload");
@@ -441,8 +476,8 @@ describe("PATCH /api/v1/products/:id", () => {
     ];
 
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .field("variants", JSON.stringify(variantPayload));
@@ -462,8 +497,8 @@ describe("PATCH /api/v1/products/:id", () => {
     ];
 
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789)
       .field("variants", JSON.stringify(variantPayload));
@@ -475,7 +510,7 @@ describe("PATCH /api/v1/products/:id", () => {
   it("should reject if product not found", async () => {
     const res = await supertest(app)
       .patch(`/api/v1/products/invalid.product.id`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("price", 56789);
 
@@ -485,8 +520,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should reject if category_id is parent", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("category_id", state.parentId);
 
@@ -496,8 +531,8 @@ describe("PATCH /api/v1/products/:id", () => {
 
   it("should reject if category not found", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product Update")
       .field("category_id", 9999);
 
@@ -506,28 +541,18 @@ describe("PATCH /api/v1/products/:id", () => {
   });
 
   it("should reject if not admin", async () => {
-    await createTestUser();
-    const resLogin = await supertest(app).post("/api/v1/auth/login").send({
-      email: "test@example.com",
-      password: "test1234",
-    });
-
-    const userToken = resLogin.body.data.access_token;
-
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${userToken}`)
+      .patch(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
       .field("name", "Test Product Update");
 
     expect(res.status).toBe(403);
     expect(res.body.errors).toBeDefined();
-
-    await deleteTestUser("test@example.com");
   });
 
   it("should reject if not send token", async () => {
     const res = await supertest(app)
-      .patch(`/api/v1/products/${productId}`)
+      .patch(`/api/v1/products/${state.productId}`)
       .field("name", "Test Product Update");
 
     expect(res.status).toBe(401);
@@ -536,59 +561,57 @@ describe("PATCH /api/v1/products/:id", () => {
 });
 
 describe("DELETE /api/v1/products/:id", () => {
-  const state = {};
-  let productId;
-  let variantId;
-  let userId;
+  /** @type {import("./utils/util-test.js").TestEnvState} */
+  let state;
 
   beforeAll(async () => {
-    await setupTestProduct(state, supertest, app);
-    productId = await createTestProduct(state.childrenId);
-    variantId = await createTestProductVariant(productId);
-    userId = await createTestUser("productDelete@exmaple.com");
+    state = await setupProductTest(supertest, app);
   });
 
   afterAll(async () => {
-    await deleteTestUser("admin@gmail.com");
-    await deleteTestVariant(variantId);
-    await deleteTestProduct(productId);
-    await deleteTestCategory(state.childrenId);
-    await deleteTestCategory(state.parentId);
-    await deleteTestUser("productDelete@exmaple.com");
+    await cleanupProductTest(state);
   });
 
-  it("should successfully hard delete product & variants with no relation order", async () => {
-    const delID = await createTestProduct(state.childrenId);
-    const delVariantId = await createTestProductVariant(delID, {
-      name: "variant delete",
-    });
-    const cartId = await createTestCartItem(userId, delVariantId);
+  it("should reject if product not found", async () => {
     const res = await supertest(app)
-      .delete(`/api/v1/products/${delID}`)
-      .set("Authorization", `Bearer ${state.token}`);
+      .delete(`/api/v1/products/${9999}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`);
 
-    expect(res.status).toBe(200);
-    expect(res.body.data).toBeNull();
+    expect(res.status).toBe(404);
+    expect(res.body.errors).toBeDefined();
+  });
 
-    const countVariant = await countVariantByProductIdTest(delID);
-    const countCart = await countCartItemByProductTest(delID);
-    expect(countVariant).toBe(0);
-    expect(countCart).toBe(0);
+  it("should reject if not admin", async () => {
+    const res = await supertest(app)
+      .delete(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenUser}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.errors).toBeDefined();
+  });
+
+  it("should reject if not send token", async () => {
+    const res = await supertest(app).delete(
+      `/api/v1/products/${state.productId}`
+    );
+
+    expect(res.status).toBe(401);
+    expect(res.body.errors).toBeDefined();
   });
 
   it("should successfully soft delete product & variants if have order", async () => {
-    const addressId = await createTestAddress(userId);
-    const orderId = await createTestOrder(userId, addressId);
-    const orderItemId = await createTestOrderItem(orderId, variantId);
+    const addressId = await createTestAddress(state.userId);
+    const orderId = await createTestOrder(state.userId, addressId);
+    const orderItemId = await createTestOrderItem(orderId, state.variantId);
 
     const res = await supertest(app)
-      .delete(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${state.token}`);
+      .delete(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data).toBeNull();
 
-    const softDelProduct = await getTestProduct(productId);
+    const softDelProduct = await getTestProduct(state.productId);
 
     expect(softDelProduct.deleted_at).not.toBeNull();
     expect(softDelProduct.is_active).toBe(false);
@@ -598,38 +621,18 @@ describe("DELETE /api/v1/products/:id", () => {
     await deleteTestAddress(addressId);
   });
 
-  it("should reject if product not found", async () => {
+  it("should successfully hard delete product & variants with no relation order and clean cart item", async () => {
+    const cartId = await createTestCartItem(state.userId, state.variantId);
     const res = await supertest(app)
-      .delete(`/api/v1/products/${9999}`)
-      .set("Authorization", `Bearer ${state.token}`);
+      .delete(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.errors).toBeDefined();
-  });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeNull();
 
-  it("should reject if not admin", async () => {
-    await createTestUser();
-    const resLogin = await supertest(app).post("/api/v1/auth/login").send({
-      email: "test@example.com",
-      password: "test1234",
-    });
-
-    const userToken = resLogin.body.data.access_token;
-
-    const res = await supertest(app)
-      .delete(`/api/v1/products/${productId}`)
-      .set("Authorization", `Bearer ${userToken}`);
-
-    expect(res.status).toBe(403);
-    expect(res.body.errors).toBeDefined();
-
-    await deleteTestUser("test@example.com");
-  });
-
-  it("should reject if not send token", async () => {
-    const res = await supertest(app).delete(`/api/v1/products/${productId}`);
-
-    expect(res.status).toBe(401);
-    expect(res.body.errors).toBeDefined();
+    const countVariant = await countVariantByProductIdTest(state.productId);
+    const countCart = await countCartItemByProductTest(state.productId);
+    expect(countVariant).toBe(0);
+    expect(countCart).toBe(0);
   });
 });

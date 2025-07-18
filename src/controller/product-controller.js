@@ -5,10 +5,11 @@ import { parseIntOrThrow } from "../utils/util.js";
 const getAll = async (req, res, next) => {
   try {
     const filter = {};
-    const { search, category, parent, limit, page } = req.query;
+    const { search, category, parent, limit, page, sort } = req.query;
 
     filter.search = search;
     filter.parent = parent;
+    filter.sort = sort;
 
     if (category !== undefined) {
       filter.category = parseIntOrThrow(

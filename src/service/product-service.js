@@ -41,6 +41,23 @@ const getAll = async (filter) => {
   whereClause.deleted_at = null;
   whereClause.is_active = true;
 
+  let orderByClause;
+  switch (filter.sort) {
+    case "best_seller":
+      orderByClause = { total_sale: "desc" };
+      break;
+    case "lowest_price":
+      orderByClause = { price: "asc" };
+      break;
+    case "highest_price":
+      orderByClause = { price: "desc" };
+      break;
+    default:
+      orderByClause = {
+        created_at: "desc",
+      };
+  }
+
   const skip = (filter.page - 1) * filter.limit;
   const [total, data] = await Promise.all([
     prismaClient.product.count({ where: whereClause }),
@@ -56,6 +73,7 @@ const getAll = async (filter) => {
       },
       take: filter.limit,
       skip: skip,
+      orderBy: orderByClause,
     }),
   ]);
 
