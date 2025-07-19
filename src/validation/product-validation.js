@@ -2,6 +2,7 @@ import Joi from "joi";
 
 export const productInsertValidation = Joi.object({
   name: Joi.string().required(),
+  cost_price: Joi.number().integer().required(),
   price: Joi.number().integer().required(),
   discount: Joi.number().integer().optional().allow(null),
   category_id: Joi.number().integer().required(),
@@ -25,6 +26,7 @@ export const productInsertValidation = Joi.object({
 
 export const productPatchValidation = Joi.object({
   name: Joi.string().optional(),
+  cost_price: Joi.number().integer().optional(),
   price: Joi.number().integer().optional(),
   discount: Joi.number().integer().optional().allow(null),
   category_id: Joi.number().integer().optional(),

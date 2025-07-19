@@ -15,7 +15,7 @@ import {
 } from "../validation/product-validation.js";
 import { validate } from "../validation/validate.js";
 
-const getAll = async (filter) => {
+const getAll = async (filter, reqUser) => {
   let whereClause = {};
 
   if (filter.search) {
@@ -63,14 +63,8 @@ const getAll = async (filter) => {
     prismaClient.product.count({ where: whereClause }),
     prismaClient.product.findMany({
       where: whereClause,
-      include: {
-        category: {
-          include: {
-            parent: true,
-          },
-        },
-        product_variants: true,
-      },
+      // select will include category and variants
+      select: handleSelect(reqUser),
       take: filter.limit,
       skip: skip,
       orderBy: orderByClause,
@@ -86,17 +80,11 @@ const getAll = async (filter) => {
   };
 };
 
-const findById = async (id) => {
+const findById = async (id, reqUser) => {
   const product = await prismaClient.product.findUnique({
     where: { id },
-    include: {
-      product_variants: true,
-      category: {
-        include: {
-          parent: true,
-        },
-      },
-    },
+    // select will include category and variants
+    select: handleSelect(reqUser),
   });
 
   if (!product) throw new ResponseError(404, "Product not found");
@@ -118,6 +106,7 @@ const insert = async (reqBody, file) => {
     createdProduct = await tx.product.create({
       data: {
         name: product.name,
+        cost_price: product.cost_price,
         price: product.price,
         category_id: product.category_id,
         description: product.description,
@@ -301,6 +290,43 @@ async function validationCategoryProduct(categoryId) {
 
   if (countParent > 0)
     throw new ResponseError(400, "Category must be subcategory or children");
+}
+
+function handleSelect(reqUser) {
+  const select = {
+    id: true,
+    name: true,
+    category_id: true,
+    is_active: true,
+    deleted_at: true,
+    description: true,
+    discount: true,
+    img_url: true,
+    total_sale: true,
+    updated_at: true,
+    created_at: true,
+    category: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    },
+    product_variants: true,
+  };
+
+  if (reqUser && reqUser.role?.toLowerCase() === "admin") {
+    select.cost_price = true;
+  }
+
+  return select;
 }
 
 export default {

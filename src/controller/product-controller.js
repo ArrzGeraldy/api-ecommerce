@@ -29,7 +29,8 @@ const getAll = async (req, res, next) => {
         : 1;
 
     const { data, total_page, total_data } = await productService.getAll(
-      filter
+      filter,
+      req.user
     );
 
     res.status(200).json({
@@ -46,7 +47,7 @@ const getAll = async (req, res, next) => {
 
 const findById = async (req, res, next) => {
   try {
-    const data = await productService.findById(req.params.id);
+    const data = await productService.findById(req.params.id, req.user);
 
     res.status(200).json({
       data,

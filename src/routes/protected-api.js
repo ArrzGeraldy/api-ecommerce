@@ -12,10 +12,17 @@ import {
   uploadUpdateMiddleware,
 } from "../middleware/upload.js";
 import cartItemController from "../controller/cart-item-controller.js";
+import userController from "../controller/user-controller.js";
 
 const protectedRouter = express.Router();
 
 protectedRouter.use(authMiddleware);
+
+// user api
+protectedRouter.get("/users", requireAdmin, userController.getAll);
+protectedRouter.get("/users/:id", userController.getById);
+protectedRouter.patch("/users/:id", userController.edit);
+protectedRouter.delete("/users/:id", requireAdmin, userController.destroy);
 
 // category api
 protectedRouter.post("/categories", requireAdmin, categoryController.create);

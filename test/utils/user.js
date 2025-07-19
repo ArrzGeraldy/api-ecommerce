@@ -46,3 +46,19 @@ export async function createAdminUser() {
     },
   });
 }
+
+export const createTestUserWithOverrides = async (overrides = {}) => {
+  const pass = overrides.password || "overrides password";
+  const user = await prismaClient.user.create({
+    data: {
+      email: overrides.email || "overrides@gmail.com",
+      username: overrides.username || "overrides user",
+      password: await bcrypt.hash(pass, 10),
+      deleted_at: overrides.deleted_at || null,
+      is_blocked: overrides.is_blocked || false,
+      role: overrides.role || "user",
+    },
+  });
+
+  return user;
+};

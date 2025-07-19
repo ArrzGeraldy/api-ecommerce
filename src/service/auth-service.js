@@ -47,10 +47,15 @@ const login = async (req) => {
       email: true,
       password: true,
       role: true,
+      deleted_at: true,
+      is_blocked: true,
     },
   });
 
-  if (!user) throw new ResponseError(400, "invalid email or password");
+  if (!user) throw new ResponseError(400, "Invalid email or password");
+
+  if (user.deleted_at)
+    throw new ResponseError(400, "Invalid email or password");
 
   const isPasswordValid = await bcrypt.compare(
     loginReq.password,
@@ -58,7 +63,10 @@ const login = async (req) => {
   );
 
   if (!isPasswordValid)
-    throw new ResponseError(400, "invalid email or password");
+    throw new ResponseError(400, "Invalid email or password");
+
+  if (user.is_blocked)
+    throw new ResponseError(400, "This account already blocked");
 
   const userInfo = {
     id: user.id,

@@ -2,10 +2,10 @@
 CREATE TYPE "Role" AS ENUM ('user', 'admin', 'superadmin');
 
 -- CreateEnum
-CREATE TYPE "StatusOrder" AS ENUM ('pending', 'paid', 'shipping', 'completed', 'canceled');
+CREATE TYPE "StatusOrder" AS ENUM ('pending', 'progress', 'shipping', 'completed', 'canceled');
 
 -- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'paid', 'shipping', 'completed', 'canceled');
+CREATE TYPE "PaymentStatus" AS ENUM ('pending', 'settlement', 'paid', 'expired', 'canceled');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -17,7 +17,7 @@ CREATE TABLE "users" (
     "token" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-    "is_blocked" BOOLEAN NOT NULL DEFAULT true,
+    "is_blocked" BOOLEAN NOT NULL DEFAULT false,
     "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
@@ -43,6 +43,7 @@ CREATE TABLE "products" (
     "category_id" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "total_sale" INTEGER NOT NULL DEFAULT 0,
+    "cost_price" INTEGER NOT NULL,
     "price" INTEGER NOT NULL,
     "discount" INTEGER,
     "img_url" VARCHAR(255) NOT NULL,

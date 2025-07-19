@@ -44,7 +44,7 @@ model User{
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  is_blocked Boolean @default(true)
+  is_blocked Boolean @default(false)
   deleted_at DateTime?
 
   cart_item CartItem[]
@@ -79,6 +79,7 @@ model Product{
   category_id Int
   name String
   total_sale Int @default(0)
+  cost_price Int
   price Int
   discount Int?   
   img_url String  @db.VarChar(255)
@@ -86,7 +87,7 @@ model Product{
   is_active Boolean @default(true)
   deleted_at DateTime?
   created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  updated_at  DateTime @updatedAt @default(now())
 
   category Category @relation(fields: [category_id], references: [id])
   product_variants ProductVariant[]
@@ -100,7 +101,7 @@ model ProductVariant {
   name String @db.VarChar(100)
   price_diff Int
   stock Int
-  updated_at  DateTime @updatedAt
+  updated_at  DateTime @updatedAt @default(now())
   is_active Boolean @default(true)
   deleted_at DateTime?
 

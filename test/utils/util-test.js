@@ -42,7 +42,7 @@ export const getFileTest = () => {
  * @param {import('express').Application} app
  * @returns {Promise<TestEnvState>}
  */
-const prepareTestEnvironment = async (supertest, app) => {
+export const prepareTestEnvironment = async (supertest, app) => {
   const state = {};
 
   // Create regular user
@@ -79,7 +79,7 @@ const prepareTestEnvironment = async (supertest, app) => {
 /**
  * @param {TestEnvState} state
  */
-const cleanupTestEnv = async (state) => {
+export const cleanupTestEnv = async (state) => {
   await deleteTestProduct(state.productId);
   await deleteTestCategory(state.childrenId);
   await deleteTestCategory(state.parentId);
@@ -132,14 +132,13 @@ export const cleanUpTestCartItem = async (state) => {
   await deleteTestUser("admin@gmail.com");
 };
 
-// ==================================================================
+// ========================= setup test =========================
 
 export const setupProductTest = async (supertest, app) => {
   return await prepareTestEnvironment(supertest, app);
 };
 
 /**
- *
  * @param {TestEnvState} state
  */
 export const cleanupProductTest = async (state) => {
@@ -173,7 +172,6 @@ export const setupOrderTest = async (supertest, app) => {
 };
 
 /**
- *
  * @param {OrderTestEnv} state
  */
 export const cleanupOrderTest = async (state) => {

@@ -5,6 +5,7 @@ export const createTestProduct = async (categoryId, overrides = {}) => {
     data: {
       name: overrides.name || "test product xyz",
       category_id: categoryId,
+      cost_price: overrides.price || 9000,
       price: overrides.price || 10000,
       discount: overrides.discount || null,
       img_url: "https://example.com/image.jpg",

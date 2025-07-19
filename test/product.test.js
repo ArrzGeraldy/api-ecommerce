@@ -51,6 +51,25 @@ describe("GET /api/v1/products", () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toBeDefined();
     expect(Array.isArray(res.body.data)).toBe(true);
+    if (res.body.data.length > 0) {
+      expect(res.body.data[0].cost_price).toBeUndefined();
+    }
+    expect(res.body.total_data).toBeGreaterThan(0);
+    expect(res.body.total_page).toBeGreaterThan(0);
+  });
+
+  it("should return all products with cost_price if req admin", async () => {
+    const res = await supertest(app)
+      .get("/api/v1/products")
+      .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .query({ page: 1, limit: 10 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeDefined();
+    expect(Array.isArray(res.body.data)).toBe(true);
+    if (res.body.data.length > 0) {
+      expect(res.body.data[0].cost_price).toBeDefined();
+    }
     expect(res.body.total_data).toBeGreaterThan(0);
     expect(res.body.total_page).toBeGreaterThan(0);
   });
@@ -62,6 +81,9 @@ describe("GET /api/v1/products", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toBeDefined();
+    if (res.body.data.length > 0) {
+      expect(res.body.data[0].cost_price).toBeUndefined();
+    }
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
@@ -114,9 +136,51 @@ describe("GET /api/v1/products/:id", () => {
     expect(product.id).toBe(state.productId); // opsional, jika ingin lebih akurat
     expect(Array.isArray(product.product_variants)).toBe(true);
     expect(product.category).toBeDefined();
-    expect(product.category.id).toBeDefined(); // bisa dicek juga id-nya
+    expect(product.category.id).toBeDefined();
+    expect(product.cost_price).toBeUndefined();
 
-    // Cek parent category jika ada
+    if (product.category.parent !== null) {
+      expect(product.category.parent.id).toBeDefined();
+    }
+  });
+
+  it("should get product by id with cost_price req admin", async () => {
+    const res = await supertest(app)
+      .get(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenAdmin}`);
+
+    expect(res.status).toBe(200);
+
+    const product = res.body.data;
+
+    expect(product).toBeDefined();
+    expect(product.id).toBe(state.productId); // opsional, jika ingin lebih akurat
+    expect(Array.isArray(product.product_variants)).toBe(true);
+    expect(product.category).toBeDefined();
+    expect(product.category.id).toBeDefined();
+    expect(product.cost_price).toBeDefined();
+
+    if (product.category.parent !== null) {
+      expect(product.category.parent.id).toBeDefined();
+    }
+  });
+
+  it("should cost_price toBeUndefined if user login", async () => {
+    const res = await supertest(app)
+      .get(`/api/v1/products/${state.productId}`)
+      .set("Authorization", `Bearer ${state.tokenUser}`);
+
+    expect(res.status).toBe(200);
+
+    const product = res.body.data;
+
+    expect(product).toBeDefined();
+    expect(product.id).toBe(state.productId); // opsional, jika ingin lebih akurat
+    expect(Array.isArray(product.product_variants)).toBe(true);
+    expect(product.category).toBeDefined();
+    expect(product.category.id).toBeDefined();
+    expect(product.cost_price).toBeUndefined();
+
     if (product.category.parent !== null) {
       expect(product.category.parent.id).toBeDefined();
     }
@@ -147,6 +211,7 @@ describe("POST /api/v1/products", () => {
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "Test description")
@@ -170,6 +235,7 @@ describe("POST /api/v1/products", () => {
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "...")
@@ -184,6 +250,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .field("cost_price", 90000)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -199,6 +266,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .field("cost_price", 90000)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.childrenId)
@@ -214,6 +282,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .field("cost_price", 90000)
       .field("name", "Test Product")
       .field("price", "price")
       .field("category_id", state.childrenId)
@@ -229,6 +298,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .field("cost_price", 90000)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", "category id")
@@ -244,6 +314,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .field("cost_price", 90000)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", 99999)
@@ -259,6 +330,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
+      .field("cost_price", 90000)
       .field("name", "Test Product")
       .field("price", 100000)
       .field("category_id", state.parentId)
@@ -276,6 +348,7 @@ describe("POST /api/v1/products", () => {
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "Test description")
@@ -292,6 +365,7 @@ describe("POST /api/v1/products", () => {
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "Test description")
@@ -308,6 +382,7 @@ describe("POST /api/v1/products", () => {
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenAdmin}`)
       .field("name", "Test Product")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "Test description")
@@ -323,6 +398,7 @@ describe("POST /api/v1/products", () => {
       .post("/api/v1/products")
       .set("Authorization", `Bearer ${state.tokenUser}`)
       .field("name", "Test Product Forbidden")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "Test description")
@@ -336,6 +412,7 @@ describe("POST /api/v1/products", () => {
     const res = await supertest(app)
       .post("/api/v1/products")
       .field("name", "Test Product Unauthorized")
+      .field("cost_price", 90000)
       .field("price", 100000)
       .field("category_id", state.childrenId)
       .field("description", "Test description")

@@ -14,3 +14,23 @@ export const authMiddleware = (req, res, next) => {
     return res.status(401).json({ errors: "Unauthorized" });
   }
 };
+
+export const attachUser = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader?.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, config.accessTokenSecret);
+    req.user = decoded;
+  } catch (err) {
+    console.warn("Invalid token:", err.message);
+    req.user = undefined;
+  }
+
+  next();
+};
