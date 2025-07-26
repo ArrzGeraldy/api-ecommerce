@@ -2,15 +2,20 @@ import jwt from "jsonwebtoken";
 import { config } from "../app/config.js";
 
 export const authMiddleware = (req, res, next) => {
-  const accessToken = req.headers.authorization?.split(" ")[1];
-  if (!accessToken) return res.status(401).json({ errors: "Unauthorized" });
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ errors: "Unauthorized" });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(accessToken, config.accessTokenSecret);
+    const decoded = jwt.verify(token, config.accessTokenSecret);
     req.user = decoded;
     next();
-  } catch (error) {
-    console.log({ error });
+  } catch (err) {
+    console.error(err);
     return res.status(401).json({ errors: "Unauthorized" });
   }
 };

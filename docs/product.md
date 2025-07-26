@@ -81,6 +81,7 @@ Request Field:
 | Field         | Type    | Required | Description                       |
 | ------------- | ------- | -------- | --------------------------------- |
 | `name`        | string  | ✅       | Product name                      |
+| `cost_price`  | integer | ✅       | Cost price in IDR                 |
 | `price`       | integer | ✅       | Base price in IDR                 |
 | `discount`    | integer | ❌       | Optional discount                 |
 | `category_id` | integer | ✅       | ID of category (must be child)    |

@@ -20,7 +20,7 @@ describe("GET api/v1/users/:userId/address", () => {
     addressId = await createTestAddress(userId);
     await createAdminUser();
     const resAdmin = await supertest(app).post("/api/v1/auth/login").send({
-      email: "admin@gmail.com",
+      email: "test.admin@gmail.com",
       password: "admin123",
     });
     const resUser = await supertest(app).post("/api/v1/auth/login").send({
@@ -35,7 +35,7 @@ describe("GET api/v1/users/:userId/address", () => {
   afterAll(async () => {
     await deleteTestAddress(addressId);
     await deleteTestUser("address@example.com");
-    await deleteTestUser("admin@gmail.com");
+    await deleteTestUser("test.admin@gmail.com");
   });
 
   it("should get list of addres user by id", async () => {
@@ -312,7 +312,7 @@ describe("DELETE api/v1/users/:userId/address/:id", () => {
     addressId = await createTestAddress(userId);
     await createAdminUser();
     const resAdmin = await supertest(app).post("/api/v1/auth/login").send({
-      email: "admin@gmail.com",
+      email: "test.admin@gmail.com",
       password: "admin123",
     });
     const resUser = await supertest(app).post("/api/v1/auth/login").send({
@@ -329,7 +329,7 @@ describe("DELETE api/v1/users/:userId/address/:id", () => {
     await deleteTestOrder(orderId);
     await deleteTestAddress(addressId);
     await deleteTestUser("address@example.com");
-    await deleteTestUser("admin@gmail.com");
+    await deleteTestUser("test.admin@gmail.com");
   });
 
   it("should hard delete successfully if address don't have order req by admin", async () => {

@@ -51,7 +51,7 @@ CREATE TABLE "products" (
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "deleted_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "products_pkey" PRIMARY KEY ("id")
 );
@@ -63,7 +63,7 @@ CREATE TABLE "product_variants" (
     "name" VARCHAR(100) NOT NULL,
     "price_diff" INTEGER NOT NULL,
     "stock" INTEGER NOT NULL,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "deleted_at" TIMESTAMP(3),
 

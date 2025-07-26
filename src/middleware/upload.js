@@ -19,7 +19,7 @@ export const uploadMiddleware = (req, res, next) => {
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      return next(new UploadError(400, "File size exceeds 2MB limit"));
+      return next(new UploadError(400, "Image must be less than 2MB"));
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
@@ -49,7 +49,7 @@ export const uploadUpdateMiddleware = (req, res, next) => {
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      return next(new UploadError(400, "File size exceeds 2MB limit"));
+      return next(new UploadError(400, "Image must be less than 2MB"));
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];

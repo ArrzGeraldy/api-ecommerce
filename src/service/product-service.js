@@ -96,6 +96,9 @@ const insert = async (reqBody, file) => {
   // So no need to JSON.parse(reqBody.variants) manually
   const product = validate(productInsertValidation, reqBody);
 
+  if (product.discount !== undefined && product.discount > 100) {
+    throw new ResponseError(400, "Discount must not exceed 100%");
+  }
   await validationCategoryProduct(product.category_id);
 
   const result = await uploadStreamClodinary(file.buffer);
@@ -296,6 +299,7 @@ function handleSelect(reqUser) {
   const select = {
     id: true,
     name: true,
+    price: true,
     category_id: true,
     is_active: true,
     deleted_at: true,

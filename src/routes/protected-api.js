@@ -13,6 +13,7 @@ import {
 } from "../middleware/upload.js";
 import cartItemController from "../controller/cart-item-controller.js";
 import userController from "../controller/user-controller.js";
+import variantController from "../controller/variant-controller.js";
 
 const protectedRouter = express.Router();
 
@@ -50,6 +51,13 @@ protectedRouter.delete(
   "/products/:id",
   requireAdmin,
   productController.destroy
+);
+
+// variants
+protectedRouter.delete(
+  "/variants/:id",
+  requireAdmin,
+  variantController.destroy
 );
 
 // user address

@@ -16,7 +16,7 @@ const url = "/api/v1/categories";
 
 describe(`GET ${url}`, () => {
   it("should can get category tree", async () => {
-    const res = await supertest(app).get(url);
+    const res = await supertest(app).get(url).query({ type: "tree" });
 
     expect(res.status).toBe(200);
     expect(res.body.data).toBeDefined();
@@ -29,7 +29,7 @@ describe(`POST ${url}`, () => {
   beforeAll(async () => {
     await createAdminUser();
     const res = await supertest(app).post("/api/v1/auth/login").send({
-      email: "admin@gmail.com",
+      email: "test.admin@gmail.com",
       password: "admin123",
     });
 
@@ -37,7 +37,7 @@ describe(`POST ${url}`, () => {
   });
 
   afterAll(async () => {
-    await deleteTestUser("admin@gmail.com");
+    await deleteTestUser("test.admin@gmail.com");
   });
 
   it("should can create parent category", async () => {
@@ -129,7 +129,7 @@ describe(`PUT ${url}/:id`, () => {
   beforeAll(async () => {
     await createAdminUser();
     let res = await supertest(app).post("/api/v1/auth/login").send({
-      email: "admin@gmail.com",
+      email: "test.admin@gmail.com",
       password: "admin123",
     });
 
@@ -139,7 +139,7 @@ describe(`PUT ${url}/:id`, () => {
   });
 
   afterAll(async () => {
-    await deleteTestUser("admin@gmail.com");
+    await deleteTestUser("test.admin@gmail.com");
     await deleteTestCategory(id);
   });
 
@@ -213,7 +213,7 @@ describe(`DELETE ${url}/:id`, () => {
   beforeAll(async () => {
     await createAdminUser();
     let res = await supertest(app).post("/api/v1/auth/login").send({
-      email: "admin@gmail.com",
+      email: "test.admin@gmail.com",
       password: "admin123",
     });
 
@@ -225,7 +225,7 @@ describe(`DELETE ${url}/:id`, () => {
   });
 
   afterAll(async () => {
-    await deleteTestUser("admin@gmail.com");
+    await deleteTestUser("test.admin@gmail.com");
     await deleteTestCategory(childrenId);
     await deleteTestCategory(parentId);
   });

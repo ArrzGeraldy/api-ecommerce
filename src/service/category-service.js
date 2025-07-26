@@ -4,45 +4,159 @@ import { generateSlug } from "../utils/util.js";
 import { categoryValidation } from "../validation/category-validation.js";
 import { validate } from "../validation/validate.js";
 
-const getCategoryTree = async () => {
-  const parents = await prismaClient.category.findMany({
-    where: {
-      parent_id: null,
+const findAll = async (filter) => {
+  const whereClause = {
+    deleted_at: null,
+  };
+
+  const selectClause = {
+    id: true,
+    name: true,
+    parent_id: true,
+    created_at: true,
+    slug: true,
+    parent: {
+      select: {
+        id: true,
+        name: true,
+      },
     },
-    select: {
-      id: true,
-      name: true,
-      children: {
+  };
+
+  // Search by name
+  if (filter.search) {
+    whereClause.name = {
+      contains: filter.search,
+      mode: "insensitive",
+    };
+  }
+
+  // Filter by type
+  switch (filter.type) {
+    case "parent":
+      whereClause.parent_id = null;
+      break;
+
+    case "children":
+      whereClause.parent_id = { not: null };
+      break;
+
+    case "tree":
+      whereClause.parent_id = null;
+      selectClause.children = {
         select: {
           id: true,
           name: true,
         },
+      };
+      delete selectClause.parent;
+      break;
+
+    case "children-by-slug":
+      if (!filter.slug) {
+        throw new Error("Missing 'slug' for childrenBySlug filter");
+      }
+
+      // Cari parent category berdasarkan slug
+      const parent = await prismaClient.category.findFirst({
+        where: {
+          slug: filter.slug,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!parent) {
+        return { data: [], total_page: 0, total_data: 0 };
+      }
+
+      // Ganti whereClause untuk ambil children-nya
+      whereClause.parent_id = parent.id;
+      break;
+
+    default:
+      break;
+  }
+
+  const skip = (filter.page - 1) * filter.limit;
+  const take = filter.limit;
+
+  const [total, data] = await Promise.all([
+    prismaClient.category.count({ where: whereClause }),
+    prismaClient.category.findMany({
+      where: whereClause,
+      select: selectClause,
+      take,
+      skip,
+      orderBy: {
+        created_at: "asc",
       },
-    },
+    }),
+  ]);
+
+  return {
+    data,
+    total_page: Math.ceil(total / take),
+    total_data: total,
+  };
+};
+
+const findById = async (id) => {
+  const category = await prismaClient.category.findUnique({
+    where: { id },
   });
 
-  return parents;
+  if (!category) throw new ResponseError(404, "Category not found");
+
+  return category;
 };
 
 const create = async (req) => {
   const category = validate(categoryValidation, req);
 
+  let parent = null;
+
   if (category.parent_id) {
-    const parent = await prismaClient.category.count({
+    parent = await prismaClient.category.findUnique({
       where: {
         id: category.parent_id,
         parent_id: null,
       },
     });
 
-    if (!parent) throw new ResponseError(400, "Invalid Parent");
+    if (!parent || parent.parent_id !== null)
+      throw new ResponseError(400, "Invalid Parent");
+    const children = await prismaClient.category.count({
+      where: { name: category.name, parent_id: category.parent_id },
+    });
+
+    if (children > 0)
+      throw new ResponseError(400, "Duplicate child name under this parent");
+  } else {
+    const duplicateParent = await prismaClient.category.findFirst({
+      where: {
+        name: {
+          equals: category.name,
+          mode: "insensitive",
+        },
+        parent_id: null,
+      },
+    });
+
+    if (duplicateParent) {
+      throw new ResponseError(400, "Duplicate parent name");
+    }
   }
 
   return await prismaClient.category.create({
     data: {
       name: category.name,
       parent_id: category.parent_id,
-      slug: generateSlug(category.name),
+      slug: generateSlug(
+        category.name + (parent?.name ? ` ${parent.name}` : "")
+      ),
     },
     select: {
       id: true,
@@ -163,8 +277,9 @@ async function runSoftDeleteCategory(products, category) {
 }
 
 export default {
-  getCategoryTree,
   create,
   update,
   destroy,
+  findAll,
+  findById,
 };

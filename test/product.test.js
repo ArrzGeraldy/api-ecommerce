@@ -218,7 +218,7 @@ describe("POST /api/v1/products", () => {
       .field("variants", variantsJson)
       .attach("image", imagePath);
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(res.body.data.name).toBe("Test Product");
     expect(res.body.data.product_variants).toBeDefined();
     expect(res.body.data.img_url).toBeDefined();

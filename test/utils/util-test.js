@@ -61,7 +61,7 @@ export const prepareTestEnvironment = async (supertest, app) => {
 
   // Login as admin
   const resAdmin = await supertest(app).post("/api/v1/auth/login").send({
-    email: "admin@gmail.com",
+    email: "test.admin@gmail.com",
     password: "admin123",
   });
   state.tokenAdmin = resAdmin.body.data.access_token;
@@ -84,7 +84,7 @@ export const cleanupTestEnv = async (state) => {
   await deleteTestCategory(state.childrenId);
   await deleteTestCategory(state.parentId);
   await deleteTestUser("test.test@gmail.com");
-  await deleteTestUser("admin@gmail.com");
+  await deleteTestUser("test.admin@gmail.com");
 };
 
 export const setupTestCartItem = async (state, supertest, app) => {
@@ -109,7 +109,7 @@ export const setupTestCartItem = async (state, supertest, app) => {
   // get token admin
   await createAdminUser();
   const res = await supertest(app).post("/api/v1/auth/login").send({
-    email: "admin@gmail.com",
+    email: "test.admin@gmail.com",
     password: "admin123",
   });
 
@@ -129,7 +129,7 @@ export const cleanUpTestCartItem = async (state) => {
   await deleteTestCartItem(state.cartItemId);
   await deleteTestProduct(state.productId);
   await deleteTestUser("cart.test@gmail.com");
-  await deleteTestUser("admin@gmail.com");
+  await deleteTestUser("test.admin@gmail.com");
 };
 
 // ========================= setup test =========================

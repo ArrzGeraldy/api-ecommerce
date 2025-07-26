@@ -12,7 +12,8 @@ publicRouter.delete("/auth/logout", authController.logout);
 publicRouter.post("/auth/refresh", authController.refresh);
 
 // category api
-publicRouter.get("/categories", categoryController.findAll);
+publicRouter.get("/categories", categoryController.getAll);
+publicRouter.get("/categories/:id", categoryController.getById);
 
 // product api
 publicRouter.get("/products", attachUser, productController.getAll);

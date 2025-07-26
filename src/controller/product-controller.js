@@ -71,7 +71,7 @@ const create = async (req, res, next) => {
 
     const data = await productService.insert(req.body, req.file);
 
-    res.status(200).json({ data });
+    res.status(201).json({ data });
   } catch (error) {
     next(error);
   }

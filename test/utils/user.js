@@ -39,7 +39,7 @@ export async function createAdminUser() {
 
   await prismaClient.user.create({
     data: {
-      email: "admin@gmail.com",
+      email: "test.admin@gmail.com",
       username: "admin",
       password: hashedPassword,
       role: "admin",
