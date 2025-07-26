@@ -13,10 +13,18 @@ const login = async (req, res, next) => {
   try {
     const data = await authService.login(req.body);
 
+    // res.cookie("token", data.refreshToken, {
+    //   httpOnly: true,
+    //   secure: false,
+    //   sameSite: "Lax",
+    //   maxAge: 7 * 24 * 60 * 60 * 1000,
+    // });
+
+    // production
     res.cookie("token", data.refreshToken, {
       httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
+      secure: true, //
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
