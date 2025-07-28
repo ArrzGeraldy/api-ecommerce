@@ -3,11 +3,14 @@ import { midtransCoreApi } from "../config/midtrans.js";
 import { prismaClient } from "../app/database.js";
 import { validate } from "../validation/validate.js";
 import {
+  orderCreatePaymentValidation,
+  orderCreateValidation,
   orderCreateValidationBank,
   orderPatchValidation,
 } from "../validation/order-validation.js";
 import { calculateProductAmount, randomString } from "../utils/util.js";
 import { authorizeUserOrAdmin } from "../utils/authorizatioin-util.js";
+import { addressInsertValidation } from "../validation/address-validation.js";
 
 const findAll = async (filter) => {
   const whereClause = {};
@@ -90,7 +93,30 @@ const findByUser = async (userId, reqUser, filter) => {
 };
 
 const findById = async (id, reqUser) => {
-  const order = await getOrderById(id);
+  const order = await prismaClient.order.findUnique({
+    where: { id },
+    include: {
+      order_items: {
+        include: {
+          product_variant: {
+            select: {
+              name: true,
+              product: {
+                select: {
+                  name: true,
+                  price: true,
+                  discount: true,
+                  img_url: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      payment: true,
+      shipping: true,
+    },
+  });
   if (!order) throw new ResponseError(404, "Order not found");
 
   authorizeUserOrAdmin(order.user_id, reqUser);
@@ -98,11 +124,10 @@ const findById = async (id, reqUser) => {
   return order;
 };
 
-const createBankTransferOrder = async (userId, reqBody) => {
+const createOrder = async (userId, reqBody) => {
   // validate req
   // ✅ include validation bank value (bca,bri,bni,cimb)
-  const orderReq = validate(orderCreateValidationBank, reqBody);
-
+  const orderReq = validate(orderCreateValidation, reqBody);
   // validate stock & calculate base price
   // also add amount to req item
   let basePrice = 0;
@@ -146,28 +171,13 @@ const createBankTransferOrder = async (userId, reqBody) => {
     basePrice += amount; // Add to total base pric
   }
 
-  // validate address is owner by userid
-  const countAddress = await prismaClient.address.count({
-    where: { id: orderReq.address_id, user_id: userId },
-  });
-
-  if (countAddress < 1) throw new ResponseError(403, "is not your address");
-
-  // CREATE FAKE SHIPPING
-  const fakeShippingCost = 10000;
-  const fakeTrackingNum = randomString(8);
-
   // create order
-  const newOrder = await prismaClient.$transaction(async (tx) => {
+  return await prismaClient.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {
         user_id: userId,
-        address_id: orderReq.address_id,
-        shipping_courier: orderReq.shipping_courier,
-        shipping_cost: fakeShippingCost,
-        tracking_number: fakeTrackingNum,
         base_price: basePrice,
-        final_price: basePrice + fakeShippingCost,
+        final_price: basePrice,
       },
     });
 
@@ -180,26 +190,65 @@ const createBankTransferOrder = async (userId, reqBody) => {
       })),
     });
 
+    return order;
+  });
+};
+
+const createPayment = async (orderId, reqBody) => {
+  // find order
+  const order = await prismaClient.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new ResponseError(404, "Order not found");
+
+  // validate
+  const result = validate(orderCreatePaymentValidation, reqBody);
+
+  // CREATE FAKE SHIPPING
+  const fakeShippingCost = 10000;
+  const fakeTrackingNum = randomString(8);
+
+  const orderUpdated = await prismaClient.$transaction(async (tx) => {
     await tx.payment.create({
       data: {
-        order_id: order.id,
+        order_id: orderId,
+        bank: result.bank,
         method: "bank_transfer",
-        bank: orderReq.bank,
       },
     });
 
-    return order;
+    await tx.shipping.create({
+      data: {
+        order_id: orderId,
+        city: result.address.city,
+        phone: result.address.phone,
+        postal_code: result.address.postal_code,
+        province: result.address.province,
+        recipient_name: result.address.recipient_name,
+        detail: result.address.detail,
+        shipping_courier: result.shipping_courier,
+        shipping_cost: fakeShippingCost,
+        tracking_number: fakeTrackingNum,
+      },
+    });
+
+    const orderUpdated = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        final_price: order.base_price + fakeShippingCost,
+      },
+    });
+
+    return orderUpdated;
   });
 
   // charge midtrans
   const parameter = {
     payment_type: "bank_transfer",
     transaction_details: {
-      order_id: newOrder.id,
-      gross_amount: newOrder.final_price,
+      order_id: orderUpdated.id,
+      gross_amount: orderUpdated.final_price,
     },
     bank_transfer: {
-      bank: orderReq.bank,
+      bank: result.bank,
     },
   };
 
@@ -222,15 +271,13 @@ const createBankTransferOrder = async (userId, reqBody) => {
       throw new Error("Missing VA number or expiry time from Midtrans");
     }
 
-    await prismaClient.payment.update({
-      where: { order_id: newOrder.id },
+    return await prismaClient.payment.update({
+      where: { order_id: orderUpdated.id },
       data: {
         expiry_time: new Date(chargeRes.expiry_time),
         va_number: vaNumber,
       },
     });
-
-    return getOrderById(newOrder.id);
   } catch (error) {
     console.error("Midtrans charge error:", error);
     throw new ResponseError(
@@ -272,10 +319,10 @@ const patchOrder = async (id, reqBody) => {
 async function getOrderById(id) {
   return await prismaClient.order.findUnique({
     where: { id },
-    include: {
-      order_items: true,
-      payment: true,
-    },
+    // include: {
+    //   order_items: true,
+    //   payment: true,
+    // },
   });
 }
 
@@ -293,9 +340,10 @@ function validateStatus(status) {
 }
 
 export default {
-  createBankTransferOrder,
   findById,
   findAll,
   findByUser,
   patchOrder,
+  createOrder,
+  createPayment,
 };

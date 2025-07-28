@@ -16,7 +16,11 @@ describe("GET api/v1/users/:userId/address", () => {
   let tokenAdmin;
   let tokenUser;
   beforeAll(async () => {
-    userId = await createTestUser("address@example.com", "address", "address");
+    userId = await createTestUser(
+      "address@example.com",
+      "address",
+      "addressexample"
+    );
     addressId = await createTestAddress(userId);
     await createAdminUser();
     const resAdmin = await supertest(app).post("/api/v1/auth/login").send({
@@ -25,7 +29,7 @@ describe("GET api/v1/users/:userId/address", () => {
     });
     const resUser = await supertest(app).post("/api/v1/auth/login").send({
       email: "address@example.com",
-      password: "address",
+      password: "addressexample",
     });
 
     tokenUser = resUser.body.data.access_token;
@@ -59,13 +63,13 @@ describe("GET api/v1/users/:userId/address", () => {
   it("should get reject if user not owner address or admin", async () => {
     const otherUserId = await createTestUser(
       "other@gmail.com",
-      "address",
-      "address"
+      "address123",
+      "address123"
     );
 
     const resUser = await supertest(app).post("/api/v1/auth/login").send({
       email: "other@gmail.com",
-      password: "address",
+      password: "address123",
     });
 
     const otherToken = resUser.body.data.access_token;
@@ -93,12 +97,12 @@ describe("POST /api/v1/users/:userId/address", () => {
   beforeAll(async () => {
     userId = await createTestUser(
       "post.address@example.com",
-      "test123",
-      "test123"
+      "test123123",
+      "test123123"
     );
     const res = await supertest(app).post("/api/v1/auth/login").send({
       email: "post.address@example.com",
-      password: "test123",
+      password: "test123123",
     });
     token = res.body.data.access_token;
   });
@@ -117,7 +121,6 @@ describe("POST /api/v1/users/:userId/address", () => {
         phone: "08123456789",
         province: "Jawa Barat",
         city: "Bandung",
-        district: "Coblong",
         postal_code: "40123",
         is_primary: true,
       });
@@ -136,7 +139,6 @@ describe("POST /api/v1/users/:userId/address", () => {
         phone: "",
         province: "",
         city: "",
-        district: "",
         postal_code: "",
         is_primary: null,
       });
@@ -153,7 +155,6 @@ describe("POST /api/v1/users/:userId/address", () => {
         phone: "08987654321",
         province: "DKI Jakarta",
         city: "Jakarta",
-        district: "Kebayoran",
         postal_code: "12120",
         is_primary: false,
       });
@@ -165,12 +166,12 @@ describe("POST /api/v1/users/:userId/address", () => {
   it("should reject if other user tries to insert", async () => {
     const otherId = await createTestUser(
       "other@example.com",
-      "pass123",
-      "pass123"
+      "pass123123",
+      "pass123123"
     );
     const loginRes = await supertest(app).post("/api/v1/auth/login").send({
       email: "other@example.com",
-      password: "pass123",
+      password: "pass123123",
     });
 
     const tokenOther = loginRes.body.data.access_token;
@@ -183,7 +184,6 @@ describe("POST /api/v1/users/:userId/address", () => {
         phone: "0822334455",
         province: "Aceh",
         city: "Banda Aceh",
-        district: "Ulee Kareng",
         postal_code: "23234",
         is_primary: true,
       });
@@ -203,12 +203,12 @@ describe("PATCH /api/v1/users/:userId/address/:id", () => {
   beforeAll(async () => {
     userId = await createTestUser(
       "post.address@example.com",
-      "test123",
-      "test123"
+      "test123123",
+      "test123123"
     );
     const res = await supertest(app).post("/api/v1/auth/login").send({
       email: "post.address@example.com",
-      password: "test123",
+      password: "test123123",
     });
     token = res.body.data.access_token;
     addressId = await createTestAddress(userId);
@@ -241,7 +241,6 @@ describe("PATCH /api/v1/users/:userId/address/:id", () => {
         phone: "",
         province: "",
         city: "",
-        district: "",
         postal_code: "",
         is_primary: null,
       });
@@ -258,7 +257,6 @@ describe("PATCH /api/v1/users/:userId/address/:id", () => {
         phone: "08987654321",
         province: "DKI Jakarta",
         city: "Jakarta",
-        district: "Kebayoran",
         postal_code: "12120",
         is_primary: false,
       });
@@ -270,12 +268,12 @@ describe("PATCH /api/v1/users/:userId/address/:id", () => {
   it("should reject if other user tries to update", async () => {
     const otherId = await createTestUser(
       "other@example.com",
-      "pass123",
-      "pass123"
+      "pass123123",
+      "pass123123"
     );
     const loginRes = await supertest(app).post("/api/v1/auth/login").send({
       email: "other@example.com",
-      password: "pass123",
+      password: "pass123123",
     });
 
     const tokenOther = loginRes.body.data.access_token;
@@ -288,7 +286,6 @@ describe("PATCH /api/v1/users/:userId/address/:id", () => {
         phone: "0822334455",
         province: "Aceh",
         city: "Banda Aceh",
-        district: "Ulee Kareng",
         postal_code: "23234",
         is_primary: true,
       });
@@ -308,7 +305,11 @@ describe("DELETE api/v1/users/:userId/address/:id", () => {
   let orderId;
 
   beforeAll(async () => {
-    userId = await createTestUser("address@example.com", "address", "address");
+    userId = await createTestUser(
+      "address@example.com",
+      "address132",
+      "address132"
+    );
     addressId = await createTestAddress(userId);
     await createAdminUser();
     const resAdmin = await supertest(app).post("/api/v1/auth/login").send({
@@ -317,7 +318,7 @@ describe("DELETE api/v1/users/:userId/address/:id", () => {
     });
     const resUser = await supertest(app).post("/api/v1/auth/login").send({
       email: "address@example.com",
-      password: "address",
+      password: "address132",
     });
 
     tokenUser = resUser.body.data.access_token;
@@ -372,12 +373,12 @@ describe("DELETE api/v1/users/:userId/address/:id", () => {
   it("should reject if other user tries to delete", async () => {
     const otherId = await createTestUser(
       "other@example.com",
-      "pass123",
-      "pass123"
+      "pass123123",
+      "pass123123"
     );
     const loginRes = await supertest(app).post("/api/v1/auth/login").send({
       email: "other@example.com",
-      password: "pass123",
+      password: "pass123123",
     });
 
     const tokenOther = loginRes.body.data.access_token;
@@ -390,17 +391,5 @@ describe("DELETE api/v1/users/:userId/address/:id", () => {
     expect(res.body.errors).toBeDefined();
 
     await deleteTestUser("other@example.com");
-  });
-
-  it("should soft delete successfully if address have order", async () => {
-    const res = await supertest(app)
-      .delete(`/api/v1/users/${userId}/address/${addressId}`)
-      .set("Authorization", `Bearer ${tokenUser}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.data).toBeNull();
-    const softDelAddress = await getTestAddress(addressId);
-    expect(softDelAddress).toBeDefined();
-    expect(softDelAddress.deleted_at).not.toBeNull();
   });
 });

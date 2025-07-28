@@ -76,7 +76,8 @@ protectedRouter.delete("/users/:userId/cart/:id", cartItemController.destroy);
 protectedRouter.get("/orders", requireAdmin, orderController.getAll);
 protectedRouter.get("/orders/:id", orderController.getById);
 protectedRouter.get("/users/:userId/orders", orderController.getByUser);
-protectedRouter.post("/orders", orderController.createByBankTransfer);
+protectedRouter.post("/orders", orderController.createOrder);
+protectedRouter.post("/orders/:id/payment", orderController.createPayment);
 protectedRouter.patch("/orders/:id", requireAdmin, orderController.edit);
 
 export { protectedRouter };

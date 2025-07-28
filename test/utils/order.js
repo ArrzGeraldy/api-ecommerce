@@ -1,48 +1,42 @@
 import { prismaClient } from "../../src/app/database.js";
-import { randomUUID } from "crypto";
 
-export const createTestOrder = async (user_id, address_id) => {
+export const createTestOrder = async (user_id, overrides = {}) => {
   const order = await prismaClient.order.create({
     data: {
+      base_price: overrides.base_price || 100000,
+      final_price: overrides.final_price || 20000,
       user_id,
-      address_id,
-      shipping_courier: "JNE",
-      shipping_cost: 10000,
-      tracking_number: "TRK123456789",
-      final_price: 300000,
-      base_price: 200000,
-      status: "pending",
     },
   });
+
   return order.id;
 };
 
 export const deleteTestOrder = async (id) => {
-  await prismaClient.order.delete({
-    where: { id },
-  });
+  await prismaClient.order.delete({ where: { id } });
 };
 
-export const createTestOrderItem = async (order_id, product_variant_id) => {
+export const createTestOrderItem = async (
+  orderId,
+  variantId,
+  overrides = {}
+) => {
   const orderItem = await prismaClient.orderItem.create({
     data: {
-      order_id,
-      product_variant_id,
-      quantity: 1,
-      amount: 10000,
+      order_id: orderId,
+      quantity: overrides.quantity || 10,
+      product_variant_id: variantId,
+      amount: overrides.amount || 10000,
     },
   });
+
   return orderItem.id;
 };
 
 export const deleteTestOrderItem = async (id) => {
-  await prismaClient.orderItem.delete({
-    where: { id },
-  });
+  await prismaClient.orderItem.delete({ where: { id } });
 };
 
-export const countTotalOrder = async (whereClause = {}) => {
-  return await prismaClient.order.count({
-    where: whereClause,
-  });
+export const countTotalOrder = async () => {
+  return await prismaClient.order.count();
 };

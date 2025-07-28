@@ -238,13 +238,13 @@ describe("POST /api/v1/users/:userId/cart", () => {
 
   it("should reject if other user tries to insert", async () => {
     const otherId = await createTestUser(
-      "other@example.com",
-      "pass123",
-      "pass123"
+      "otherCart@example.com",
+      "pass123123",
+      "pass123123"
     );
     const loginRes = await supertest(app).post("/api/v1/auth/login").send({
-      email: "other@example.com",
-      password: "pass123",
+      email: "otherCart@example.com",
+      password: "pass123123",
     });
 
     const tokenOther = loginRes.body.data.access_token;
@@ -259,7 +259,7 @@ describe("POST /api/v1/users/:userId/cart", () => {
 
     expect(res.status).toBe(403);
     expect(res.body.errors).toBeDefined();
-    await deleteTestUser("other@example.com");
+    await deleteTestUser("otherCart@example.com");
   });
 
   it("should reject if other user not send token", async () => {
@@ -362,12 +362,12 @@ describe("PATCH /api/v1/users/:userId/cart/:id", () => {
   it("should reject if other user tries to insert", async () => {
     const otherId = await createTestUser(
       "other@example.com",
-      "pass123",
-      "pass123"
+      "pass132123",
+      "pass132123"
     );
     const loginRes = await supertest(app).post("/api/v1/auth/login").send({
       email: "other@example.com",
-      password: "pass123",
+      password: "pass132123",
     });
 
     const tokenOther = loginRes.body.data.access_token;
@@ -465,12 +465,12 @@ describe("DELETE /api/v1/users/:userId/cart/:id", () => {
   it("should reject if other user tries to insert", async () => {
     const otherId = await createTestUser(
       "other@example.com",
-      "pass123",
-      "pass123"
+      "pass123123",
+      "pass123123"
     );
     const loginRes = await supertest(app).post("/api/v1/auth/login").send({
       email: "other@example.com",
-      password: "pass123",
+      password: "pass123123",
     });
 
     const tokenOther = loginRes.body.data.access_token;

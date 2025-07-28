@@ -5,7 +5,6 @@ import { createTestUser, deleteTestUser } from "./utils/user";
 import { createTestProduct, deleteTestProduct } from "./utils/product";
 import { createTestProductVariant, deleteTestVariant } from "./utils/variant";
 import { countTotalOrder, deleteTestOrder } from "./utils/order";
-import { createTestAddress, deleteTestAddress } from "./utils/address";
 
 describe("GET /api/v1/orders", () => {
   /**@type {import('./utils/util-test').OrderTestEnv} */
@@ -311,21 +310,13 @@ describe("POST /api/v1/orders", () => {
       .set("Authorization", `Bearer ${state.tokenUser}`)
       .send({
         items: [item],
-        address_id: state.addressId,
-        shipping_courier: "test-courier",
-        bank: "bca",
       });
 
     expect(res.status).toBe(201);
     expect(res.body.data).toBeDefined();
     expect(res.body.data.id).toBeDefined();
     expect(res.body.data.user_id).toBe(state.userId);
-    expect(res.body.data.shipping_courier).toBe("test-courier");
-    expect(res.body.data.address_id).toBe(state.addressId);
     expect(res.body.data.base_price).toBe(140000 * 10);
-    expect(res.body.data.order_items).toBeDefined();
-    expect(res.body.data.payment).toBeDefined();
-    expect(res.body.data.payment.va_number).toBeDefined();
 
     await deleteTestOrder(res.body.data.id);
     await deleteTestVariant(newVariantId);
@@ -348,9 +339,6 @@ describe("POST /api/v1/orders", () => {
       .set("Authorization", `Bearer ${state.tokenUser}`)
       .send({
         items: [item],
-        address_id: state.addressId,
-        shipping_courier: "test-courier",
-        bank: "bca",
       });
 
     expect(res.status).toBe(400);
@@ -376,9 +364,6 @@ describe("POST /api/v1/orders", () => {
       .set("Authorization", `Bearer ${state.tokenUser}`)
       .send({
         items: item,
-        address_id: state.addressId,
-        shipping_courier: "",
-        bank: "",
       });
 
     expect(res.status).toBe(400);
@@ -386,38 +371,6 @@ describe("POST /api/v1/orders", () => {
 
     await deleteTestVariant(newVariantId);
     await deleteTestProduct(newProductId);
-  });
-
-  it("should reject if address does not belong to user", async () => {
-    const newProductId = await createTestProduct(state.childrenId, {
-      price: 100000,
-    });
-    const newVariantId = await createTestProductVariant(newProductId, {
-      price_diff: 40000,
-      stock: 10,
-    });
-
-    const item = { product_variant_id: newVariantId, quantity: 5 };
-
-    const otherUserId = await createTestUser("otherAddress@gmail.com");
-    const otherAddressId = await createTestAddress(otherUserId);
-    const res = await supertest(app)
-      .post(`/api/v1/orders`)
-      .set("Authorization", `Bearer ${state.tokenUser}`)
-      .send({
-        items: [item],
-        address_id: otherAddressId,
-        shipping_courier: "qweqeqeq",
-        bank: "bca",
-      });
-
-    expect(res.status).toBe(403);
-    expect(res.body.errors).toBeDefined();
-
-    await deleteTestVariant(newVariantId);
-    await deleteTestProduct(newProductId);
-    await deleteTestAddress(otherAddressId);
-    await deleteTestUser("otherAddress@gmail.com");
   });
 
   it("should reject if variant not found", async () => {
@@ -436,40 +389,9 @@ describe("POST /api/v1/orders", () => {
       .set("Authorization", `Bearer ${state.tokenUser}`)
       .send({
         items: [item],
-        address_id: state.addressId,
-        shipping_courier: "qweqeqeq",
-        bank: "bca",
       });
 
     expect(res.status).toBe(404);
-    expect(res.body.errors).toBeDefined();
-
-    await deleteTestVariant(newVariantId);
-    await deleteTestProduct(newProductId);
-  });
-
-  it("should reject invalid bank allowed", async () => {
-    const newProductId = await createTestProduct(state.childrenId, {
-      price: 100000,
-    });
-    const newVariantId = await createTestProductVariant(newProductId, {
-      price_diff: 40000,
-      stock: 10,
-    });
-
-    const item = { product_variant_id: newVariantId, quantity: 20 };
-
-    const res = await supertest(app)
-      .post(`/api/v1/orders`)
-      .set("Authorization", `Bearer ${state.tokenUser}`)
-      .send({
-        items: [item],
-        address_id: state.addressId,
-        shipping_courier: "qweqeq",
-        bank: "invalid bank",
-      });
-
-    expect(res.status).toBe(400);
     expect(res.body.errors).toBeDefined();
 
     await deleteTestVariant(newVariantId);
@@ -490,9 +412,6 @@ describe("POST /api/v1/orders", () => {
       .post(`/api/v1/orders`)
       .send({
         items: [item],
-        address_id: state.addressId,
-        shipping_courier: "test-courier",
-        bank: "bca",
       });
 
     expect(res.status).toBe(401);
@@ -503,7 +422,7 @@ describe("POST /api/v1/orders", () => {
   });
 });
 
-describe("PATCH /api/v1/orders/:id", () => {
+describe("POST /api/v1/orders/:id/payment", () => {
   /**@type {import('./utils/util-test').OrderTestEnv} */
   let state;
   beforeAll(async () => {
@@ -514,120 +433,189 @@ describe("PATCH /api/v1/orders/:id", () => {
     await cleanupOrderTest(state);
   });
 
-  it("should edit order successfully", async () => {
+  it("should create order payment successfully", async () => {
+    const item = { product_variant_id: state.variantId, quantity: 10 };
+
     const res = await supertest(app)
-      .patch(`/api/v1/orders/${state.orderId}`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        status: "completed",
-        payment_status: "paid",
-        tracking_number: "patch tracking number",
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.id).toBeDefined();
-    expect(res.body.data.status).toBe("completed");
-    expect(res.body.data.tracking_number).toBe("patch tracking number");
-    expect(res.body.data.payment).toBeDefined();
-    expect(res.body.data.payment.status).toBe("paid");
-  });
-
-  it("should allow partial update: tracking number only", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/${state.orderId}`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        tracking_number: "patch tracking number",
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.data).toBeDefined();
-    expect(res.body.data.id).toBeDefined();
-    expect(res.body.data.tracking_number).toBe("patch tracking number");
-    expect(res.body.data.payment).toBeDefined();
-  });
-
-  it("should reject invalid status value", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/${state.orderId}`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        status: "invalid status",
-      });
-
-    expect(res.status).toBe(400);
-    expect(res.body.errors).toBeDefined();
-  });
-
-  it("should reject invalid payment status value", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/${state.orderId}`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        payment_status: "invalid status",
-      });
-
-    expect(res.status).toBe(400);
-    expect(res.body.errors).toBeDefined();
-  });
-
-  it("should reject tracking number empty string", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/${state.orderId}`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        tracking_number: "",
-      });
-
-    expect(res.status).toBe(400);
-    expect(res.body.errors).toBeDefined();
-  });
-
-  it("should reject invalid req", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/${state.orderId}`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        order_id: 123,
-      });
-
-    expect(res.status).toBe(400);
-    expect(res.body.errors).toBeDefined();
-  });
-
-  it("should reject order not found", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/invalid.order.id`)
-      .set("Authorization", `Bearer ${state.tokenAdmin}`)
-      .send({
-        tracking_number: "update tracking",
-      });
-
-    expect(res.status).toBe(404);
-    expect(res.body.errors).toBeDefined();
-  });
-
-  it("should reject if not admin", async () => {
-    const res = await supertest(app)
-      .patch(`/api/v1/orders/invalid.order.id`)
+      .post(`/api/v1/orders`)
       .set("Authorization", `Bearer ${state.tokenUser}`)
       .send({
-        tracking_number: "update tracking",
+        items: [item],
       });
 
-    expect(res.status).toBe(403);
-    expect(res.body.errors).toBeDefined();
+    expect(res.status).toBe(201);
+
+    const resPayment = await supertest(app)
+      .post(`/api/v1/orders/${res.body.data.id}/payment`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        shipping_courier: "JNE",
+        bank: "bca",
+        address: {
+          city: "city",
+          phone: "0888889999",
+          postal_code: "4312",
+          province: "province",
+          recipient_name: "test-name",
+        },
+      });
+
+    expect(resPayment.status).toBe(200);
+    expect(resPayment.body.data).toBeDefined();
+    expect(resPayment.body.data.bank).toBe("bca");
+    expect(resPayment.body.data.va_number).toBeDefined();
+    expect(resPayment.body.data.order_id === res.body.data.id).toBe(true);
+
+    await deleteTestOrder(res.body.data.id);
+  });
+
+  it("should reject if invalid address", async () => {
+    const item = { product_variant_id: state.variantId, quantity: 10 };
+
+    const res = await supertest(app)
+      .post(`/api/v1/orders`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        items: [item],
+      });
+
+    expect(res.status).toBe(201);
+
+    const resPayment = await supertest(app)
+      .post(`/api/v1/orders/${res.body.data.id}/payment`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        shipping_courier: "JNE",
+        bank: "bca",
+        address: {
+          city: "city",
+          postal_code: "4312",
+          province: "province",
+          recipient_name: "test-name",
+        },
+      });
+
+    expect(resPayment.status).toBe(400);
+    expect(resPayment.body.errors).toBeDefined();
+
+    await deleteTestOrder(res.body.data.id);
+  });
+
+  it("should reject if invalid bank not allowed", async () => {
+    const item = { product_variant_id: state.variantId, quantity: 10 };
+
+    const res = await supertest(app)
+      .post(`/api/v1/orders`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        items: [item],
+      });
+
+    expect(res.status).toBe(201);
+
+    const resPayment = await supertest(app)
+      .post(`/api/v1/orders/${res.body.data.id}/payment`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        shipping_courier: "JNE",
+        bank: "not allowed bank",
+        address: {
+          city: "city",
+          phone: "0888889999",
+          postal_code: "4312",
+          province: "province",
+          recipient_name: "test-name",
+        },
+      });
+
+    expect(resPayment.status).toBe(400);
+    expect(resPayment.body.errors).toBeDefined();
+
+    await deleteTestOrder(res.body.data.id);
+  });
+
+  it("should reject if shipping courier not include", async () => {
+    const item = { product_variant_id: state.variantId, quantity: 10 };
+
+    const res = await supertest(app)
+      .post(`/api/v1/orders`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        items: [item],
+      });
+
+    expect(res.status).toBe(201);
+
+    const resPayment = await supertest(app)
+      .post(`/api/v1/orders/${res.body.data.id}/payment`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        bank: "bca",
+        address: {
+          city: "city",
+          phone: "0888889999",
+          postal_code: "4312",
+          province: "province",
+          recipient_name: "test-name",
+        },
+      });
+
+    expect(resPayment.status).toBe(400);
+    expect(resPayment.body.errors).toBeDefined();
+
+    await deleteTestOrder(res.body.data.id);
+  });
+
+  it("should reject if order not found", async () => {
+    const resPayment = await supertest(app)
+      .post(`/api/v1/orders/invalid.order.id/payment`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
+      .send({
+        shipping_courier: "JNE",
+        bank: "bca",
+        address: {
+          city: "city",
+          phone: "0888889999",
+          postal_code: "4312",
+          province: "province",
+          recipient_name: "test-name",
+        },
+      });
+
+    expect(resPayment.status).toBe(404);
+    expect(resPayment.body.errors).toBeDefined();
   });
 
   it("should reject if unauthorized", async () => {
+    const item = { product_variant_id: state.variantId, quantity: 10 };
+
     const res = await supertest(app)
-      .patch(`/api/v1/orders/invalid.order.id`)
+      .post(`/api/v1/orders`)
+      .set("Authorization", `Bearer ${state.tokenUser}`)
       .send({
-        tracking_number: "update tracking",
+        items: [item],
       });
 
-    expect(res.status).toBe(401);
-    expect(res.body.errors).toBeDefined();
+    expect(res.status).toBe(201);
+
+    const resPayment = await supertest(app)
+      .post(`/api/v1/orders/${res.body.data.id}/payment`)
+      .set("Authorization", `Bearer invalid.token`)
+      .send({
+        shipping_courier: "JNE",
+        bank: "bca",
+        address: {
+          city: "city",
+          phone: "0888889999",
+          postal_code: "4312",
+          province: "province",
+          recipient_name: "test-name",
+        },
+      });
+
+    expect(resPayment.status).toBe(401);
+    expect(resPayment.body.errors).toBeDefined();
+
+    await deleteTestOrder(res.body.data.id);
   });
 });

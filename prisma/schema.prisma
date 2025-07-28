@@ -132,25 +132,21 @@ model Address{
   phone String @db.VarChar(20)
   province String @db.VarChar(100)
   city String @db.VarChar(100)
-  district String @db.VarChar(100)
   postal_code String @db.VarChar(10)
-  is_primary Boolean
+  detail String?
+  is_primary Boolean @default(false)
   deleted_at DateTime?
   created_at  DateTime @default(now())
 
-  user User @relation(fields: [user_id],references: [id])
-  order Order[]
 
+  user User @relation(fields: [user_id],references: [id])
   @@map("addresses")
 }
 
 model Order{
   id String @id @db.VarChar(100) @default(uuid())
   user_id Int
-  address_id Int
-  shipping_courier String @db.VarChar(100)
-  shipping_cost Int
-  tracking_number String? @db.VarChar(100)
+
   base_price Int
   final_price Int
   status StatusOrder @default(pending)
@@ -159,7 +155,7 @@ model Order{
 
 
   user User @relation(fields: [user_id],references: [id])
-  address Address @relation(fields: [address_id],references: [id])
+  shipping Shipping?
   payment Payment?
   order_items OrderItem[]
 
@@ -179,6 +175,25 @@ model OrderItem{
   product_variant ProductVariant @relation(fields: [product_variant_id],references: [id])
 
   @@map("order_items")
+}
+
+model Shipping{
+  order_id String @unique
+  shipping_courier String @db.VarChar(100)
+  shipping_cost Int
+  tracking_number String? @db.VarChar(100)
+
+  recipient_name String @db.VarChar(100)
+  phone String @db.VarChar(20)
+  province String @db.VarChar(100)
+  city String @db.VarChar(100)
+  postal_code String @db.VarChar(10)
+  detail String?
+
+
+  order Order @relation(fields: [order_id],references: [id],onDelete: Cascade)
+
+  @@map("shippings")
 }
 
 model Payment{

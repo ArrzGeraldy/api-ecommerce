@@ -677,10 +677,8 @@ describe("DELETE /api/v1/products/:id", () => {
   });
 
   it("should successfully soft delete product & variants if have order", async () => {
-    const addressId = await createTestAddress(state.userId);
-    const orderId = await createTestOrder(state.userId, addressId);
+    const orderId = await createTestOrder(state.userId);
     const orderItemId = await createTestOrderItem(orderId, state.variantId);
-
     const res = await supertest(app)
       .delete(`/api/v1/products/${state.productId}`)
       .set("Authorization", `Bearer ${state.tokenAdmin}`);
@@ -695,7 +693,6 @@ describe("DELETE /api/v1/products/:id", () => {
 
     await deleteTestOrderItem(orderItemId);
     await deleteTestOrder(orderId);
-    await deleteTestAddress(addressId);
   });
 
   it("should successfully hard delete product & variants with no relation order and clean cart item", async () => {

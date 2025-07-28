@@ -17,6 +17,7 @@ import {
   deleteTestOrderItem,
 } from "./order.js";
 import { createTestPayment } from "./payment.js";
+import { createTestShipping, deleteTestShippingByOrderId } from "./shipping.js";
 
 export const getFileTest = () => {
   const imagePath = path.join(process.cwd(), "test/file-test/image-test.jpg");
@@ -147,7 +148,6 @@ export const cleanupProductTest = async (state) => {
 
 /**
  * @typedef {TestEnvState & {
- *   addressId: number,
  *   orderId: string,
  *   orderItemId: number
  *   paymentId: number
@@ -157,14 +157,13 @@ export const cleanupProductTest = async (state) => {
 export const setupOrderTest = async (supertest, app) => {
   const state = await prepareTestEnvironment(supertest, app);
 
-  const addressId = await createTestAddress(state.userId);
-  const orderId = await createTestOrder(state.userId, addressId);
+  const orderId = await createTestOrder(state.userId);
   const orderItemId = await createTestOrderItem(orderId, state.variantId);
   const paymentId = await createTestPayment(orderId);
+  await createTestShipping(orderId);
 
   return {
     ...state,
-    addressId,
     orderId,
     orderItemId,
     paymentId,
@@ -177,6 +176,5 @@ export const setupOrderTest = async (supertest, app) => {
 export const cleanupOrderTest = async (state) => {
   await deleteTestOrderItem(state.orderItemId);
   await deleteTestOrder(state.orderId);
-  await deleteTestAddress(state.addressId);
   await cleanupTestEnv(state);
 };

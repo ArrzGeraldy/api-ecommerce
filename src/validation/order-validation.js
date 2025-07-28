@@ -1,4 +1,36 @@
 import Joi from "joi";
+import { addressInsertValidation } from "./address-validation.js";
+
+export const orderCreateValidation = Joi.object({
+  items: Joi.array()
+    .items(
+      Joi.object({
+        product_variant_id: Joi.number().required(),
+        quantity: Joi.number().min(1).required(),
+      })
+    )
+    .min(1)
+    .required(),
+});
+
+export const orderCreatePaymentValidation = Joi.object({
+  shipping_courier: Joi.string().max(100).required(),
+  bank: Joi.string()
+    .max(50)
+    .required()
+    .custom((value, helper) => {
+      const allowedBanks = ["bca", "bni", "bri", "cimb"];
+      const lowerValue = value.toLowerCase();
+
+      if (!allowedBanks.includes(lowerValue)) {
+        return helper.message("Allowed bank: BCA, BNI, BRI, CIMB");
+      }
+
+      return lowerValue;
+    }),
+
+  address: addressInsertValidation,
+});
 
 export const orderCreateValidationBank = Joi.object({
   items: Joi.array()

@@ -55,14 +55,23 @@ const getById = async (req, res, next) => {
   }
 };
 
-const createByBankTransfer = async (req, res, next) => {
+const createOrder = async (req, res, next) => {
   try {
-    const data = await orderService.createBankTransferOrder(
-      req.user.id,
-      req.body
-    );
+    const data = await orderService.createOrder(req.user.id, req.body);
 
     res.status(201).json({ data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createPayment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id) throw new ResponseError(400, "iD order is required");
+    const data = await orderService.createPayment(id, req.body);
+
+    res.status(200).json({ data });
   } catch (error) {
     next(error);
   }
@@ -94,7 +103,8 @@ function handleFilter(query) {
 export default {
   getAll,
   getById,
-  createByBankTransfer,
   edit,
   getByUser,
+  createOrder,
+  createPayment,
 };

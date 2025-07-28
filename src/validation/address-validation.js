@@ -5,9 +5,9 @@ export const addressInsertValidation = Joi.object({
   phone: Joi.string().max(20).required(),
   province: Joi.string().max(100).required(),
   city: Joi.string().max(100).required(),
-  district: Joi.string().max(100).required(),
   postal_code: Joi.string().max(10).required(),
-  is_primary: Joi.boolean().required(),
+  is_primary: Joi.boolean().optional(),
+  detail: Joi.string().optional(),
 });
 
 export const addressPatchValidation = Joi.object({
@@ -15,7 +15,7 @@ export const addressPatchValidation = Joi.object({
   phone: Joi.string().max(20).optional(),
   province: Joi.string().max(100).optional(),
   city: Joi.string().max(100).optional(),
-  district: Joi.string().max(100).optional(),
   postal_code: Joi.string().max(10).optional(),
   is_primary: Joi.boolean().optional(),
+  detail: Joi.string().optional(),
 });

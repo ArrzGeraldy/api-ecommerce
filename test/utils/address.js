@@ -8,7 +8,6 @@ export const createTestAddress = async (user_id) => {
       phone: "08123456789",
       province: "Jawa Barat",
       city: "Bandung",
-      district: "Coblong",
       postal_code: "40132",
       is_primary: true,
     },

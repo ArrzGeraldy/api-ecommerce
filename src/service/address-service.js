@@ -58,18 +58,6 @@ const destroy = async (userId, addressId, reqUser) => {
   if (address.user_id !== reqUser.id && reqUser.role !== "admin")
     throw new ResponseError(403, "access denied");
 
-  const hasOrder = await prismaClient.order.count({
-    where: { address_id: address.id },
-  });
-
-  // run soft delete
-  if (hasOrder > 0) {
-    return await prismaClient.address.update({
-      where: { id: address.id },
-      data: { deleted_at: new Date() },
-    });
-  }
-
   // hard delete
   return await prismaClient.address.delete({
     where: { id: address.id, user_id: userId },
